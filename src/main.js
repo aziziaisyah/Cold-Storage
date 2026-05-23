@@ -5,7 +5,10 @@ import {
   set, remove, push, get
 } from "firebase/database";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import {
+  getAuth, signInWithEmailAndPassword, signOut,
+  onAuthStateChanged, setPersistence, browserSessionPersistence
+} from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA7T1b8jHZOCy_m_ZlbA9kykw1CJEMW_GM",
@@ -23,6 +26,9 @@ const app       = initializeApp(firebaseConfig);
 const db        = getDatabase(app);
 const auth      = getAuth(app);
 const messaging = getMessaging(app);
+
+// Session hanya bertahan selama browser terbuka
+setPersistence(auth, browserSessionPersistence);
 
 let configData = { suhu_min: null, suhu_max: null };
 let chart      = null;
@@ -87,7 +93,7 @@ function initDashboard() {
     document.getElementById("suhu").innerHTML = `${data.suhu}<span class="unit">°C</span>`;
 
     if (configData.suhu_min !== null && configData.suhu_max !== null) {
-      const alertEl = document.getElementById("alert-suhu");
+      const alertEl   = document.getElementById("alert-suhu");
       const alertText = document.getElementById("alert-suhu-text");
       if (data.suhu < configData.suhu_min) {
         alertText.textContent = `Suhu terlalu rendah! ${data.suhu}°C (min: ${configData.suhu_min}°C)`;
@@ -247,9 +253,7 @@ function initDashboard() {
     }
   });
 
-  // =====================
   // CRUD KARTU RFID
-  // =====================
   onValue(ref(db, "authorized_cards"), (snapshot) => {
     const tbody = document.getElementById("kartu-body");
     if (!snapshot.exists()) {
@@ -296,8 +300,6 @@ function initDashboard() {
 // =====================
 // CRUD FUNCTIONS (global)
 // =====================
-
-// Tambah kartu RFID
 window.tambahKartu = async () => {
   const uid  = document.getElementById("input-uid").value.trim().toUpperCase();
   const nama = document.getElementById("input-nama").value.trim() || "-";
@@ -312,7 +314,6 @@ window.tambahKartu = async () => {
   }
 };
 
-// Hapus kartu RFID
 window.hapusKartu = async (uid) => {
   if (!confirm(`Hapus kartu ${uid}?`)) return;
   try {
@@ -322,7 +323,6 @@ window.hapusKartu = async (uid) => {
   }
 };
 
-// Hapus semua log RFID
 window.hapusLogRFID = async () => {
   if (!confirm("Hapus semua log akses RFID?")) return;
   try {
@@ -334,7 +334,6 @@ window.hapusLogRFID = async () => {
   }
 };
 
-// Hapus semua histori suhu
 window.hapusHistoriSuhu = async () => {
   if (!confirm("Hapus semua histori suhu?")) return;
   try {
@@ -349,7 +348,6 @@ window.hapusHistoriSuhu = async () => {
   }
 };
 
-// Hapus riwayat notifikasi (hanya local)
 window.hapusNotifikasi = () => {
   notifList.length = 0;
   document.getElementById("notif-body").innerHTML =
