@@ -27,8 +27,11 @@ const db        = getDatabase(app);
 const auth      = getAuth(app);
 const messaging = getMessaging(app);
 
-// Session hanya bertahan selama browser terbuka
+// Session hanya bertahan selama tab terbuka
 setPersistence(auth, browserSessionPersistence);
+
+// Flag untuk bedakan buka baru vs refresh
+sessionStorage.setItem("aktif", "1");
 
 let configData = { suhu_min: null, suhu_max: null };
 let chart      = null;
@@ -38,6 +41,11 @@ let chart      = null;
 // =====================
 onAuthStateChanged(auth, (user) => {
   if (user) {
+    // Kalau tidak ada flag = buka tab/window baru → logout paksa
+    if (!sessionStorage.getItem("aktif")) {
+      signOut(auth);
+      return;
+    }
     document.getElementById("halaman-login").style.display     = "none";
     document.getElementById("halaman-dashboard").style.display = "block";
     document.getElementById("user-email").textContent          = user.email;
@@ -76,6 +84,7 @@ document.getElementById("btn-login").addEventListener("click", async () => {
 // LOGOUT (desktop + mobile)
 ["btn-logout", "btn-logout-mobile"].forEach(id => {
   document.getElementById(id).addEventListener("click", async () => {
+    sessionStorage.removeItem("aktif");
     await signOut(auth);
   });
 });
